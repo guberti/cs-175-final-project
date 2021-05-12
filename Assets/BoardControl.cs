@@ -15,8 +15,50 @@ public struct Square {
 		Debug.Log(file);
 	}
 
+	public Square(int rank, int file) {
+		this.rank = rank;
+		this.file = file;
+	}
+
 	public Vector3 getCenter() {
 		return new Vector3((rank - 3.5f) * SQUARE_WIDTH, 0.001f, (file - 3.5f) * SQUARE_WIDTH);
+	}
+}
+
+public struct PieceContainer {
+	static float MOVE_DURATION = 3f;
+
+	GameObject model;
+	Square location;
+
+	public PieceContainer(GameObject model, Square location) {
+		this.model = model;
+		this.location = location;
+	}
+
+	public void UpdateLocation(Square newLocation, MonoBehaviour monoBehavior) {
+		location = newLocation;
+		monoBehavior.StartCoroutine(SmoothMove());
+	}
+
+	// Not a *real* s-curve, but a good simplification
+	private static float SCurve(float x) {
+		return 3f * Mathf.Pow(x, 2) - 2f * Mathf.Pow(x, 3);
+	}
+
+	IEnumerator SmoothMove() {
+		float currentTime = 0;
+		Vector3 start = model.transform.position;
+		Vector3 end = location.getCenter();
+
+		while(currentTime < MOVE_DURATION) {
+			model.transform.position = Vector3.Lerp(
+				start, end, SCurve(currentTime / MOVE_DURATION)
+			);
+			currentTime += Time.deltaTime;
+			yield return null;
+		}
+		model.transform.position = end;
 	}
 }
 
@@ -24,6 +66,7 @@ public class BoardControl : MonoBehaviour
 {
 
 	public GameObject moveHighlightPrefab;
+	public List<PieceContainer> pieces;
 
 	private List<GameObject> tileHighlights;
 
@@ -36,8 +79,14 @@ public class BoardControl : MonoBehaviour
     {
     	Debug.Log("Running start!");
     	isSquareSelected = false;
-    	moveHighlightPrefab = GameObject.Find("SelectedSquare");
     	tileHighlights = new List<GameObject>();
+    	pieces = new List<PieceContainer>();
+
+    	// Instantiate GameObjects
+    	moveHighlightPrefab = GameObject.Find("SelectedSquare");
+
+    	pieces.Add(new PieceContainer(GameObject.Find("WhiteKing"), new Square(2, 2)));
+    	pieces[0].UpdateLocation(new Square(5, 5), this);
     }
 
 
