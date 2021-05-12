@@ -329,8 +329,8 @@ public class BoardControl : MonoBehaviour
                         Square takenBoardSquare = new Square(takenSquare.row_ - 1, takenSquare.col_ - 1);
                         Debug.Log(takenSquare.ToString());
 
-                        PieceContainer? taker = getPieceAtSquare(oldTakerBoardSquare);
-                        PieceContainer? taken = getPieceAtSquare(takenBoardSquare);
+                        PieceContainer taker = getPieceAtSquare(oldTakerBoardSquare);
+                        PieceContainer taken = getPieceAtSquare(takenBoardSquare);
                         Debug.Assert(taker != null);
                         taker.UpdateLocation(newTakerBoardSquare, this);
 
@@ -344,6 +344,26 @@ public class BoardControl : MonoBehaviour
                         break;
                     case ChessGame.Command.Type.CASTLE:
                         ChessGame.Castle castle = (ChessGame.Castle)chosen;
+
+                        ChessGame.Square oldRookSquare = castle.start_rook_;
+                        ChessGame.Square newRookSquare = castle.end_rook_;
+
+                        Square oldRookBoardSquare = new Square(oldRookSquare.row_ - 1, oldRookSquare.col_ - 1);
+                        Square newRookBoardSquare = new Square(newRookSquare.row_ - 1, newRookSquare.col_ - 1);
+
+                        ChessGame.Square oldKingSquare = castle.start_king_;
+                        ChessGame.Square newKingSquare = castle.end_king_;
+
+                        Square oldKingBoardSquare = new Square(oldKingSquare.row_ - 1, oldKingSquare.col_ - 1);
+                        Square newKingBoardSquare = new Square(newKingSquare.row_ - 1, newKingSquare.col_ - 1);
+
+                        PieceContainer rook = getPieceAtSquare(oldRookBoardSquare);
+                        PieceContainer king = getPieceAtSquare(oldKingBoardSquare);
+
+                        rook.UpdateLocation(newRookBoardSquare, this);
+                        king.UpdateLocation(newKingBoardSquare, this);
+
+                        gameManager.move(castle);
                         break;
                     default:
                         Debug.LogError("Shouldn't get here");
