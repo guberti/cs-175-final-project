@@ -2,70 +2,83 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct Square {
+public struct Square
+{
     static float SQUARE_WIDTH = 1.5f;
 
-    int rank; // 0-7 corresponds to 1-8
-    int file; // 0-7 corresponds to A-H
+    public int rank; // 0-7 corresponds to 1-8
+    public int file; // 0-7 corresponds to A-H
 
-    public Square(RaycastHit hit) {
-        rank = (int) (hit.point.x / SQUARE_WIDTH + 4);
-        file = (int) (hit.point.z / SQUARE_WIDTH + 4);
-        Debug.Log(rank);
-        Debug.Log(file);
+    public Square(RaycastHit hit)
+    {
+        rank = (int)(hit.point.z / SQUARE_WIDTH + 4);
+        file = (int)(hit.point.x / SQUARE_WIDTH + 4);
+        // Debug.Log(rank);
+        // Debug.Log(file);
     }
 
-    public Square(int rank, int file) {
+    public Square(int rank, int file)
+    {
         this.rank = rank;
         this.file = file;
     }
 
-    public Vector3 getCenter() {
-        return new Vector3((rank - 3.5f) * SQUARE_WIDTH, 0.001f, (file - 3.5f) * SQUARE_WIDTH);
+    public Vector3 getCenter()
+    {
+        return new Vector3((file - 3.5f) * SQUARE_WIDTH, 0.001f, (rank - 3.5f) * SQUARE_WIDTH);
     }
 }
 
-public struct PieceContainer {
+public class PieceContainer
+{
     static float MOVE_DURATION = 3f;
     static float SCALE_DURATION = 2f;
 
-    GameObject model;
-    Square location;
+    public GameObject model;
+    public Square location;
 
-    public PieceContainer(GameObject model, Square location) {
+    public PieceContainer(GameObject model, Square location)
+    {
         this.model = model;
         this.model.SetActive(true);
         this.model.transform.position = location.getCenter();
         this.location = location;
     }
 
-    public void UpdateLocation(Square newLocation, MonoBehaviour monoBehavior) {
+    public void UpdateLocation(Square newLocation, MonoBehaviour monoBehavior)
+    {
         location = newLocation;
+        Debug.Log("new location : " + newLocation.file + ", " + newLocation.rank);
         monoBehavior.StartCoroutine(SmoothMove());
     }
 
-    public void DoGrowAnimation(MonoBehaviour monoBehavior) {
+    public void DoGrowAnimation(MonoBehaviour monoBehavior)
+    {
         model.transform.localScale = new Vector3(0, 0, 0);
         monoBehavior.StartCoroutine(SmoothScale(1));
     }
 
-    public void DoShrinkAnimation(MonoBehaviour monoBehavior) {
+    public void DoShrinkAnimation(MonoBehaviour monoBehavior)
+    {
         model.transform.localScale = new Vector3(1, 1, 1);
         monoBehavior.StartCoroutine(SmoothScale(-1));
     }
 
     // Not a *real* s-curve, but a good simplification
     // Faster s-curve: f(x) = x^n/(x^n + (1-x)^n)
-    private static float SCurve(float x) {
+    private static float SCurve(float x)
+    {
         return 3f * Mathf.Pow(x, 2) - 2f * Mathf.Pow(x, 3);
     }
 
-    IEnumerator SmoothMove() {
+    IEnumerator SmoothMove()
+    {
         float currentTime = 0;
         Vector3 start = model.transform.position;
         Vector3 end = location.getCenter();
 
-        while(currentTime < MOVE_DURATION) {
+        while (currentTime < MOVE_DURATION)
+        {
             model.transform.position = Vector3.Lerp(
                 start, end, SCurve(currentTime / MOVE_DURATION)
             );
@@ -75,23 +88,22 @@ public struct PieceContainer {
         model.transform.position = end;
     }
 
-    private static float ScaleCurve(float x, int direction) {
-        if (direction == 1) {
-            return Mathf.Pow(x, 0.25f);
-        } else {
-            return -Mathf.Pow(x, 4) + 1;
-        }
+    private static float ScaleCurve(float x)
+    {
+        return Mathf.Pow(x, 0.25f);
     }
 
     // 1 grows piece from nothing, -1 shrinks piece to nothing
-    IEnumerator SmoothScale(int direction) {
+    IEnumerator SmoothScale(int direction)
+    {
         float currentTime = 0;
         float start = (direction == 1) ? 0 : 1;
         float end = (direction == 1) ? 1 : 0;
 
-        while(currentTime < SCALE_DURATION) {
+        while (currentTime < SCALE_DURATION)
+        {
             model.transform.localScale = new Vector3(1, 1, 1) * Mathf.Lerp(
-                start, end, ScaleCurve(currentTime / SCALE_DURATION, direction)
+                start, end, ScaleCurve(currentTime / SCALE_DURATION)
             );
             currentTime += Time.deltaTime;
             yield return null;
@@ -128,7 +140,22 @@ public class BoardControl : MonoBehaviour
     private bool isSquareSelected;
     private bool gameOver;
     private Square selectedSquare;
-    //TODO private ChessGame gameManager;
+    private ChessGame gameManager;
+
+    public PieceContainer getPieceAtSquare(Square s)
+    {
+        Debug.Log("Finding piece at " + s.file + "," + s.rank);
+        string locs = "";
+        foreach (PieceContainer piece in pieces)
+        {
+            locs += "\n(" + piece.location.file + "," + piece.location.rank + ")";
+            if (piece.location.rank == s.rank && piece.location.file == s.file)
+                return piece;
+        }
+        Debug.Log("locations : " + locs);
+        Debug.Log("Didn't find piece");
+        return null;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -141,35 +168,39 @@ public class BoardControl : MonoBehaviour
         gameOver = false;
         tileHighlights = new List<GameObject>();
         pieces = new List<PieceContainer>();
+        gameManager = new ChessGame();
 
         InstantiatePieces();
     }
 
-    void InstantiatePieces() {
-        pieces.Add(new PieceContainer(Instantiate(whiteRook),   new Square(0, 0)));
-        pieces.Add(new PieceContainer(Instantiate(whiteKnight), new Square(1, 0)));
-        pieces.Add(new PieceContainer(Instantiate(whiteBishop), new Square(2, 0)));
-        pieces.Add(new PieceContainer(Instantiate(whiteQueen),  new Square(3, 0)));
-        pieces.Add(new PieceContainer(Instantiate(whiteKing),   new Square(4, 0)));
-        pieces.Add(new PieceContainer(Instantiate(whiteBishop), new Square(5, 0)));
-        pieces.Add(new PieceContainer(Instantiate(whiteKnight), new Square(6, 0)));
-        pieces.Add(new PieceContainer(Instantiate(whiteRook),   new Square(7, 0)));
+    void InstantiatePieces()
+    {
+        pieces.Add(new PieceContainer(Instantiate(whiteRook), new Square(0, 0)));
+        pieces.Add(new PieceContainer(Instantiate(whiteKnight), new Square(0, 1)));
+        pieces.Add(new PieceContainer(Instantiate(whiteBishop), new Square(0, 2)));
+        pieces.Add(new PieceContainer(Instantiate(whiteQueen), new Square(0, 3)));
+        pieces.Add(new PieceContainer(Instantiate(whiteKing), new Square(0, 4)));
+        pieces.Add(new PieceContainer(Instantiate(whiteBishop), new Square(0, 5)));
+        pieces.Add(new PieceContainer(Instantiate(whiteKnight), new Square(0, 6)));
+        pieces.Add(new PieceContainer(Instantiate(whiteRook), new Square(0, 7)));
 
-        pieces.Add(new PieceContainer(Instantiate(blackRook),   new Square(0, 7)));
-        pieces.Add(new PieceContainer(Instantiate(blackKnight), new Square(1, 7)));
-        pieces.Add(new PieceContainer(Instantiate(blackBishop), new Square(2, 7)));
-        pieces.Add(new PieceContainer(Instantiate(blackQueen),  new Square(3, 7)));
-        pieces.Add(new PieceContainer(Instantiate(blackKing),   new Square(4, 7)));
-        pieces.Add(new PieceContainer(Instantiate(blackBishop), new Square(5, 7)));
-        pieces.Add(new PieceContainer(Instantiate(blackKnight), new Square(6, 7)));
-        pieces.Add(new PieceContainer(Instantiate(blackRook),   new Square(7, 7)));
+        pieces.Add(new PieceContainer(Instantiate(blackRook), new Square(7, 0)));
+        pieces.Add(new PieceContainer(Instantiate(blackKnight), new Square(7, 1)));
+        pieces.Add(new PieceContainer(Instantiate(blackBishop), new Square(7, 2)));
+        pieces.Add(new PieceContainer(Instantiate(blackQueen), new Square(7, 3)));
+        pieces.Add(new PieceContainer(Instantiate(blackKing), new Square(7, 4)));
+        pieces.Add(new PieceContainer(Instantiate(blackBishop), new Square(7, 5)));
+        pieces.Add(new PieceContainer(Instantiate(blackKnight), new Square(7, 6)));
+        pieces.Add(new PieceContainer(Instantiate(blackRook), new Square(7, 7)));
 
-        for (int i = 0; i < 8; i++) {
-            pieces.Add(new PieceContainer(Instantiate(whitePawn), new Square(i, 1)));
-            pieces.Add(new PieceContainer(Instantiate(blackPawn), new Square(i, 6)));
+        for (int i = 0; i < 8; i++)
+        {
+            pieces.Add(new PieceContainer(Instantiate(whitePawn), new Square(1, i)));
+            pieces.Add(new PieceContainer(Instantiate(blackPawn), new Square(6, i)));
         }
 
-        foreach (PieceContainer pieceContainer in pieces) {
+        foreach (PieceContainer pieceContainer in pieces)
+        {
             pieceContainer.DoGrowAnimation(this);
         }
     }
@@ -178,7 +209,8 @@ public class BoardControl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!gameOver) {
+        if (!gameOver)
+        {
             CheckSelect();
         }
 
@@ -186,13 +218,15 @@ public class BoardControl : MonoBehaviour
 
     private void CheckSelect()
     {
-        if (Input.GetMouseButtonDown(0)) {
+        if (Input.GetMouseButtonDown(0))
+        {
             RaycastHit hit;
             if (
                 Physics.Raycast(
-                    Camera.main.ScreenPointToRay(Input.mousePosition), 
+                    Camera.main.ScreenPointToRay(Input.mousePosition),
                     out hit, 50f, LayerMask.GetMask("Board")
-                )) {
+                ))
+            {
                 Debug.Log("Instantiating prefab!");
                 Square clicked = new Square(hit);
                 ProcessClickedSquare(clicked);
@@ -200,25 +234,123 @@ public class BoardControl : MonoBehaviour
         }
     }
 
-    private void ProcessClickedSquare(Square clicked) {
-        if (!isSquareSelected) {
+    private void ProcessClickedSquare(Square clicked)
+    {
+        Debug.Log("Clicked square");
+        if (!isSquareSelected)
+        {
+            Debug.Log("Update Selected");
             selectedSquare = clicked;
 
             // TODO check if the current active player has a piece at selectedSquare
+            ChessGame.Square diego = new ChessGame.Square(clicked.file + 1, clicked.rank + 1);
+            Debug.Log(diego.ToString());
+            ChessGame.Piece current = ChessGame.getPiece(diego);
+            if (current == null)
+            {
+                Debug.Log("Not a piece");
+                return;
+            }
+            if (current.c_ != ChessGame.turn)
+            {
+                Debug.Log("Not your piece");
+                return;
+            }
 
             isSquareSelected = true;
-            Square[] validMoves = {clicked}; // TODO add valid moves here
+            List<ChessGame.Command> validMoves = current.getAvailableMoves(out bool temp);
+            // Square[] validMoves = {clicked}; // TODO add valid moves here
 
-            foreach (Square validMove in validMoves) {
+            foreach (ChessGame.Command move in validMoves)
+            {
+                // get the highlight square and convert it to board square
+                ChessGame.Square highlight = move.getHighlight();
+                Square boardSquare = new Square(highlight.row_ - 1, highlight.col_ - 1);
+
                 GameObject o = Instantiate(moveHighlightPrefab);
                 o.SetActive(true);
-                o.transform.position = clicked.getCenter();
+                o.transform.position = boardSquare.getCenter();
                 tileHighlights.Add(o);
             }
-        } else {
+        }
+        else
+        {
             isSquareSelected = false;
-            foreach (GameObject highlight in tileHighlights) {
+            foreach (GameObject highlight in tileHighlights)
+            {
                 Destroy(highlight);
+            }
+
+            ChessGame.Square square = new ChessGame.Square(selectedSquare.file + 1, selectedSquare.rank + 1);
+            ChessGame.Piece current = ChessGame.getPiece(square);
+
+            ChessGame.Square to = new ChessGame.Square(clicked.file + 1, clicked.rank + 1);
+
+            ChessGame.Command chosen = null;
+            List<ChessGame.Command> validMoves = current.getAvailableMoves(out bool temp);
+            foreach (ChessGame.Command move in validMoves)
+            {
+                if (move.getHighlight().equals(to))
+                {
+                    chosen = move;
+                    break;
+                }
+            }
+
+            if (chosen != null)
+            {
+                switch (chosen.t_)
+                {
+                    case ChessGame.Command.Type.MOVE:
+                        ChessGame.Move move = (ChessGame.Move)chosen;
+                        Debug.Log(move.ToString());
+                        ChessGame.Square oldSquare = move.start_;
+                        ChessGame.Square newSquare = move.end_;
+                        Square oldBoardSquare = new Square(oldSquare.row_ - 1, oldSquare.col_ - 1);
+                        Square newBoardSquare = new Square(newSquare.row_ - 1, newSquare.col_ - 1);
+                        PieceContainer piece = getPieceAtSquare(oldBoardSquare);
+                        Debug.Assert(piece != null);
+                        piece.UpdateLocation(newBoardSquare, this);
+
+                        gameManager.move(move);
+                        gameManager.showBoard();
+                        break;
+                    case ChessGame.Command.Type.TAKE:
+                        ChessGame.Take take = (ChessGame.Take)chosen;
+                        Debug.Log(take.ToString());
+
+                        ChessGame.Square oldTakerSquare = take.start_;
+                        ChessGame.Square newTakerSquare = take.end_;
+
+                        Square oldTakerBoardSquare = new Square(oldTakerSquare.row_ - 1, oldTakerSquare.col_ - 1);
+                        Square newTakerBoardSquare = new Square(newTakerSquare.row_ - 1, newTakerSquare.col_ - 1);
+
+                        ChessGame.Square takenSquare = take.taken_.s_;
+                        Square takenBoardSquare = new Square(takenSquare.row_ - 1, takenSquare.col_ - 1);
+                        Debug.Log(takenSquare.ToString());
+
+                        PieceContainer? taker = getPieceAtSquare(oldTakerBoardSquare);
+                        PieceContainer? taken = getPieceAtSquare(takenBoardSquare);
+                        Debug.Assert(taker != null);
+                        taker.UpdateLocation(newTakerBoardSquare, this);
+
+                        // remove taken
+                        pieces.Remove(taken);
+                        taken.DoShrinkAnimation(this);
+                        Destroy(taken.model, 2f);
+
+                        gameManager.move(take);
+                        gameManager.showBoard();
+                        break;
+                    case ChessGame.Command.Type.CASTLE:
+                        ChessGame.Castle castle = (ChessGame.Castle)chosen;
+                        break;
+                    default:
+                        Debug.LogError("Shouldn't get here");
+                        break;
+                }
+                // rotate the camera
+                StartCoroutine(SmoothCameraMove());
             }
 
             // TODO psuedocode for moving pieces
@@ -258,22 +390,25 @@ public class BoardControl : MonoBehaviour
             }*/
 
             // For demo purposes only, remove when done
-            StartCoroutine(SmoothCameraMove());
+
         }
     }
 
 
     // Not a *real* s-curve, but a good simplification
-    private static float SCurve(float x) {
+    private static float SCurve(float x)
+    {
         return 3f * Mathf.Pow(x, 2) - 2f * Mathf.Pow(x, 3);
     }
 
     static float CAMERA_MOVE_DURATION = 3f;
-    IEnumerator SmoothCameraMove() {
+    IEnumerator SmoothCameraMove()
+    {
         float currentTime = 0;
         float startRotation = Camera.main.transform.eulerAngles.y;
 
-        while(currentTime < CAMERA_MOVE_DURATION) {
+        while (currentTime < CAMERA_MOVE_DURATION)
+        {
             float rotation = startRotation + 180 * SCurve(currentTime / CAMERA_MOVE_DURATION);
             float rotationRad = Mathf.PI * rotation / 180f;
             Camera.main.transform.rotation = Quaternion.Euler(60, rotation, 0);
