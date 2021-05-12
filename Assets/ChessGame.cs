@@ -792,7 +792,7 @@ public class ChessGame
                 }
 
                 if (queenside_rook != null &&
-                   (queenside_rook.c_ == Color.WHITE) &&
+                   (queenside_rook.c_ == c_) &&
                    (queenside_rook.t_ == Type.ROOK) &&
                    ((Rook)queenside_rook).moved_ == false)
                 {
@@ -802,7 +802,7 @@ public class ChessGame
                 }
 
                 if (kingside_rook != null &&
-                   (kingside_rook.c_ == Color.WHITE) &&
+                   (kingside_rook.c_ == c_) &&
                    (kingside_rook.t_ == Type.ROOK) &&
                    ((Rook)kingside_rook).moved_ == false)
                 {
@@ -835,13 +835,39 @@ public class ChessGame
                 bool checking = false;
                 piece.getAvailableMoves(out checking, true);
                 if (checking)
-                {
-                    Console.WriteLine(piece.t_.ToString() + " is checking ");
                     return true;
-                }
             }
         }
         return false;
+    }
+
+
+    static public int end()
+    {
+        bool attacked = inCheck(turn);
+        bool hasMoves = false;
+        foreach (Piece piece in pieces)
+        {
+            if (piece.c_ == turn)
+            {
+                List<Command> moves = piece.getAvailableMoves(out bool temp);
+                if (moves.Count != 0)
+                {
+                    hasMoves = true;
+                    break;
+                }
+            }
+        }
+
+        // if in checkmate
+        if (attacked && hasMoves == false)
+            return 1;
+
+        // if in stalemate
+        if (attacked == false && hasMoves == false)
+            return 2;
+
+        return 0;
     }
 
     public void move(Command c)

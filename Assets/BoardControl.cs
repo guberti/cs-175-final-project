@@ -304,10 +304,13 @@ public class BoardControl : MonoBehaviour
                     case ChessGame.Command.Type.MOVE:
                         ChessGame.Move move = (ChessGame.Move)chosen;
                         Debug.Log(move.ToString());
+
                         ChessGame.Square oldSquare = move.start_;
                         ChessGame.Square newSquare = move.end_;
+
                         Square oldBoardSquare = new Square(oldSquare.row_ - 1, oldSquare.col_ - 1);
                         Square newBoardSquare = new Square(newSquare.row_ - 1, newSquare.col_ - 1);
+
                         PieceContainer piece = getPieceAtSquare(oldBoardSquare);
                         Debug.Assert(piece != null);
                         piece.UpdateLocation(newBoardSquare, this);
@@ -327,7 +330,6 @@ public class BoardControl : MonoBehaviour
 
                         ChessGame.Square takenSquare = take.taken_.s_;
                         Square takenBoardSquare = new Square(takenSquare.row_ - 1, takenSquare.col_ - 1);
-                        Debug.Log(takenSquare.ToString());
 
                         PieceContainer taker = getPieceAtSquare(oldTakerBoardSquare);
                         PieceContainer taken = getPieceAtSquare(takenBoardSquare);
@@ -340,10 +342,10 @@ public class BoardControl : MonoBehaviour
                         Destroy(taken.model, 2f);
 
                         gameManager.move(take);
-                        gameManager.showBoard();
                         break;
                     case ChessGame.Command.Type.CASTLE:
                         ChessGame.Castle castle = (ChessGame.Castle)chosen;
+                        Debug.Log(castle.ToString());
 
                         ChessGame.Square oldRookSquare = castle.start_rook_;
                         ChessGame.Square newRookSquare = castle.end_rook_;
@@ -371,6 +373,15 @@ public class BoardControl : MonoBehaviour
                 }
                 // rotate the camera
                 StartCoroutine(SmoothCameraMove());
+            }
+
+            if (ChessGame.end() == 1)
+            {
+                Debug.Log("END OF GAME");
+                if (ChessGame.turn == ChessGame.Color.WHITE)
+                    canvas.GetComponent<WinTextManager>().DisplayWinText(true);
+                else
+                    canvas.GetComponent<WinTextManager>().DisplayWinText(false);
             }
 
             // TODO psuedocode for moving pieces
