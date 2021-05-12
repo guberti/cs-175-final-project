@@ -82,7 +82,6 @@ public class BoardControl : MonoBehaviour
     public GameObject blackKnight;
     public GameObject blackPawn;
 
-
     public GameObject moveHighlightPrefab;
     public List<PieceContainer> pieces;
 
@@ -90,7 +89,7 @@ public class BoardControl : MonoBehaviour
 
     private bool isSquareSelected;
     private Square selectedSquare;
-    //private ChessGame gameManager;
+    //TODO private ChessGame gameManager;
 
     // Start is called before the first frame update
     void Start()
@@ -155,9 +154,16 @@ public class BoardControl : MonoBehaviour
         }
     }
 
+    /*private PieceContainer getAtCoordinate(Square coordinate) {
+
+    }*/
+
     private void ProcessClickedSquare(Square clicked) {
         if (!isSquareSelected) {
             selectedSquare = clicked;
+
+            // TODO check if the current active player has a piece at selectedSquare
+
             isSquareSelected = true;
             Square[] validMoves = {clicked};
 
@@ -172,10 +178,35 @@ public class BoardControl : MonoBehaviour
             foreach (GameObject highlight in tileHighlights) {
                 Destroy(highlight);
             }
+
+            // TODO pseudocode for moving pieces
+            /* 
+            foreach ()
+            */
+
+            StartCoroutine(SmoothCameraMove());
         }
     }
 
-    private void RemoveHighlights() {
 
+    // Not a *real* s-curve, but a good simplification
+    private static float SCurve(float x) {
+        return 3f * Mathf.Pow(x, 2) - 2f * Mathf.Pow(x, 3);
+    }
+
+    static float CAMERA_MOVE_DURATION = 3f;
+    IEnumerator SmoothCameraMove() {
+        float currentTime = 0;
+        Vector3 start = Camera.main.transform.position;
+        float startRotation = Camera.main.transform.eulerAngles.y;
+
+        while(currentTime < CAMERA_MOVE_DURATION) {
+            float rotation = startRotation + 180 * SCurve(currentTime / CAMERA_MOVE_DURATION);
+            float rotationRad = Mathf.PI * rotation / 180f;
+            Camera.main.transform.rotation = Quaternion.Euler(60, rotation, 0);
+            Camera.main.transform.position = new Vector3(0, 10, -7 * Mathf.Cos(rotationRad));
+            currentTime += Time.deltaTime;
+            yield return null;
+        }
     }
 }
