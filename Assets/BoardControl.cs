@@ -244,9 +244,9 @@ public class BoardControl : MonoBehaviour
             selectedSquare = clicked;
 
             // TODO check if the current active player has a piece at selectedSquare
-            ChessGame.Square diego = new ChessGame.Square(clicked.file + 1, clicked.rank + 1);
-            Debug.Log(diego.ToString());
-            ChessGame.Piece current = ChessGame.getPiece(diego);
+            ChessGame.Square smth = new ChessGame.Square(clicked.file + 1, clicked.rank + 1);
+            Debug.Log(smth.ToString());
+            ChessGame.Piece current = ChessGame.getPiece(smth);
             if (current == null)
             {
                 Debug.Log("Not a piece");
@@ -254,7 +254,7 @@ public class BoardControl : MonoBehaviour
             }
             if (current.c_ != ChessGame.turn)
             {
-                Debug.Log("Not your piece");
+                Debug.Log("Turn " + ChessGame.turn + " piece : " + current.ToString());
                 return;
             }
 
@@ -317,8 +317,8 @@ public class BoardControl : MonoBehaviour
                         piece.UpdateLocation(newBoardSquare, this);
 
                         gameManager.move(move);
-                        gameManager.showBoard();
                         break;
+
                     case ChessGame.Command.Type.TAKE:
                         ChessGame.Take take = (ChessGame.Take)chosen;
                         Debug.Log(take.ToString());
@@ -343,6 +343,7 @@ public class BoardControl : MonoBehaviour
 
                         gameManager.move(take);
                         break;
+
                     case ChessGame.Command.Type.CASTLE:
                         ChessGame.Castle castle = (ChessGame.Castle)chosen;
                         Debug.Log(castle.ToString());
@@ -410,7 +411,7 @@ public class BoardControl : MonoBehaviour
                         break;
                 }
                 // rotate the camera
-                StartCoroutine(SmoothCameraMove());
+                // StartCoroutine(SmoothCameraMove());
             }
 
             if (ChessGame.end() == 1)

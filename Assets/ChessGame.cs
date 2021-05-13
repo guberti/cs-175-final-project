@@ -348,9 +348,11 @@ public class ChessGame
             if (getPiece(curr) != null)
                 return false;
             king_.s_ = curr;
+            turn = otherColor(king_.c_);
             if (ChessGame.inCheck(king_.c_))
             {
                 king_.s_ = start_king_;
+                turn = king_.c_;
                 return false;
             }
 
@@ -361,14 +363,17 @@ public class ChessGame
                 return false;
             }
             king_.s_ = curr;
+            turn = otherColor(king_.c_);
             if (ChessGame.inCheck(king_.c_))
             {
+                turn = king_.c_;
                 king_.s_ = start_king_;
                 return false;
             }
 
             // reset position
             king_.s_ = start_king_;
+            turn = king_.c_;
             return true;
         }
 
@@ -512,6 +517,7 @@ public class ChessGame
 
         public override List<Command> getAvailableMoves(out bool checking, bool tbd = false)
         {
+            Debug.Log("GetAvailableMoves for " + ToString());
             List<Command> moves = new List<Command>();
             checking = false;
 
@@ -623,6 +629,7 @@ public class ChessGame
 
         public override List<Command> getAvailableMoves(out bool checking, bool tbd = false)
         {
+            Debug.Log("GetAvailableMoves for " + ToString());
             List<Command> moves = new List<Command>();
             checking = false;
 
@@ -669,6 +676,7 @@ public class ChessGame
 
         public override List<Command> getAvailableMoves(out bool checking, bool tbd = false)
         {
+            Debug.Log("GetAvailableMoves for " + ToString());
             List<Command> moves = new List<Command>();
             checking = false;
 
@@ -732,6 +740,7 @@ public class ChessGame
 
         public override List<Command> getAvailableMoves(out bool checking, bool tbd)
         {
+            Debug.Log("GetAvailableMoves for " + ToString());
             List<Command> moves = new List<Command>();
             checking = false;
 
@@ -798,6 +807,7 @@ public class ChessGame
 
         public override List<Command> getAvailableMoves(out bool checking, bool tbd = false)
         {
+            Debug.Log("GetAvailableMoves for " + ToString());
             List<Command> moves = new List<Command>();
             checking = false;
 
@@ -856,6 +866,7 @@ public class ChessGame
 
         public override List<Command> getAvailableMoves(out bool checking, bool tbd = false)
         {
+            Debug.Log("GetAvailableMoves for " + ToString());
             List<Command> moves = new List<Command>();
             checking = false;
 
@@ -973,17 +984,22 @@ public class ChessGame
         return false;
     }
 
+    static public Color otherColor(Color c)
+    {
+        if (c == Color.WHITE)
+            return Color.BLACK;
+        else
+            return Color.WHITE;
+    }
 
     static public int end()
     {
+        Debug.Log("TURN" + turn.ToString());
         bool attacked = inCheck(turn);
         bool hasMoves = false;
         var copy = new List<Piece>(pieces);
         foreach (Piece piece in copy)
         {
-            Debug.Log("BEGIN CHECK");
-            Debug.Log(piece.ToString());
-            Debug.Log(pieces.Count);
             if (piece.c_ == turn)
             {
                 List<Command> moves = piece.getAvailableMoves(out bool temp);
@@ -993,7 +1009,6 @@ public class ChessGame
                     break;
                 }
             }
-            Debug.Log("DONE : " + pieces.Count);
         }
 
         // if in checkmate
