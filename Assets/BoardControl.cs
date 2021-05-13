@@ -109,7 +109,8 @@ public class PieceContainer
             yield return null;
         }
 
-        model.transform.localScale = new Vector3(1, 1, 1);
+        if (direction == 1)
+            model.transform.localScale = new Vector3(1, 1, 1);
     }
 }
 
@@ -339,7 +340,6 @@ public class BoardControl : MonoBehaviour
                         // remove taken
                         pieces.Remove(taken);
                         taken.DoShrinkAnimation(this);
-                        Destroy(taken.model, 2f);
 
                         gameManager.move(take);
                         break;
@@ -367,6 +367,44 @@ public class BoardControl : MonoBehaviour
 
                         gameManager.move(castle);
                         break;
+                    case ChessGame.Command.Type.PROMOTION:
+                        ChessGame.Promotion promotion = (ChessGame.Promotion)chosen;
+                        Debug.Log(promotion.ToString());
+
+                        ChessGame.Square oldPawnSquare = promotion.start_;
+                        ChessGame.Square newPawnSquare = promotion.end_;
+
+                        Square oldPawnBoardSquare = new Square(oldPawnSquare.row_ - 1, oldPawnSquare.col_ - 1);
+                        Square newPawnBoardSquare = new Square(newPawnSquare.row_ - 1, newPawnSquare.col_ - 1);
+
+                        PieceContainer pawn = getPieceAtSquare(oldPawnBoardSquare);
+
+                        pawn.UpdateLocation(newPawnBoardSquare, this);
+                        promotion.setUpgrade(ChessGame.Type.QUEEN);
+
+                        if (promotion.other_ != null)
+                        {
+                            PieceContainer other = getPieceAtSquare(newPawnBoardSquare);
+                            pieces.Remove(other);
+                            other.DoShrinkAnimation(this);
+                        }
+
+
+                        pieces.Remove(pawn);
+                        pawn.DoShrinkAnimation(this);
+
+                        GameObject model;
+                        if (ChessGame.turn == ChessGame.Color.WHITE)
+                            model = whiteQueen;
+                        else
+                            model = blackQueen;
+
+                        PieceContainer queen = new PieceContainer(model, newPawnBoardSquare);
+                        pieces.Add(queen);
+                        queen.DoGrowAnimation(this);
+
+                        gameManager.move(promotion);
+                        break;
                     default:
                         Debug.LogError("Shouldn't get here");
                         break;
@@ -378,10 +416,16 @@ public class BoardControl : MonoBehaviour
             if (ChessGame.end() == 1)
             {
                 Debug.Log("END OF GAME");
-                if (ChessGame.turn == ChessGame.Color.WHITE)
+                if (ChessGame.turn == ChessGame.Color.BLACK)
+                {
+                    Debug.Log("WHITE WON");
                     canvas.GetComponent<WinTextManager>().DisplayWinText(true);
+                }
                 else
+                {
+                    Debug.Log("BLACK WON");
                     canvas.GetComponent<WinTextManager>().DisplayWinText(false);
+                }
             }
 
             // TODO psuedocode for moving pieces

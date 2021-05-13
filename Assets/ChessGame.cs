@@ -81,7 +81,7 @@ public class ChessGame
     {
         public enum Type
         {
-            MOVE, TAKE, CASTLE
+            MOVE, TAKE, CASTLE, PROMOTION
         };
         public Type t_;
 
@@ -193,6 +193,7 @@ public class ChessGame
 
         public override void execute()
         {
+            Debug.Log("EXECUTE");
             Debug.Assert(ChessGame.turn == taker_.c_);
             Debug.Assert(taker_.s_.equals(start_));
             Debug.Assert(ChessGame.pieces.Contains(taken_));
@@ -384,6 +385,110 @@ public class ChessGame
         }
     }
 
+    public class Promotion : Command
+    {
+        public Square start_, end_;
+        public Pawn pawn_;
+        public Piece piece_ = null;
+        public Piece other_ = null;
+
+        public Promotion(Piece pawn, Square end, Piece other = null) : base(Type.PROMOTION)
+        {
+            Debug.Assert(pawn.t_ == ChessGame.Type.PAWN);
+            pawn_ = (Pawn)pawn;
+            end_ = end;
+            start_ = pawn_.s_;
+            other_ = other;
+            setUpgrade(ChessGame.Type.QUEEN);
+        }
+
+        public void setUpgrade(ChessGame.Type upgrade)
+        {
+            Debug.Assert(upgrade != ChessGame.Type.PAWN && upgrade != ChessGame.Type.KING);
+
+            switch (upgrade)
+            {
+                case ChessGame.Type.KNIGHT:
+                    piece_ = new Knight(pawn_.c_, end_);
+                    break;
+                case ChessGame.Type.BISHOP:
+                    piece_ = new Bishop(pawn_.c_, end_);
+                    break;
+                case ChessGame.Type.ROOK:
+                    piece_ = new Rook(pawn_.c_, end_);
+                    piece_.moved_ = true;
+                    break;
+                case ChessGame.Type.QUEEN:
+                    piece_ = new Queen(pawn_.c_, end_);
+                    break;
+                default:
+                    // should not get here
+                    break;
+            }
+        }
+
+        public override void execute()
+        {
+            Debug.Assert(piece_ != null);
+            Debug.Assert(ChessGame.turn == pawn_.c_);
+            Debug.Assert(pawn_.s_.equals(start_));
+            Debug.Assert(ChessGame.pieces.Contains(piece_) == false);
+
+            prevPassing_ = inPassing;
+            inPassing = null;
+
+            ChessGame.pieces.Remove(pawn_);
+            ChessGame.pieces.Add(piece_);
+
+            if (other_ != null)
+                ChessGame.pieces.Remove(other_);
+
+            if (pawn_.c_ == Color.WHITE)
+                turn = Color.BLACK;
+            else
+                turn = Color.WHITE;
+        }
+
+        public override void undo()
+        {
+            Debug.Assert(piece_ != null);
+            Debug.Assert(ChessGame.turn != pawn_.c_);
+            Debug.Assert(ChessGame.pieces.Contains(piece_) == true);
+
+            inPassing = prevPassing_;
+
+            ChessGame.pieces.Remove(piece_);
+            ChessGame.pieces.Add(pawn_);
+
+            if (other_ != null)
+                ChessGame.pieces.Add(other_);
+
+            if (pawn_.c_ == Color.WHITE)
+                turn = Color.WHITE;
+            else
+                turn = Color.BLACK;
+        }
+
+        // returns false if the movement is invalid
+        public override bool check()
+        {
+            execute();
+            bool r = ChessGame.inCheck(pawn_.c_);
+            undo();
+            return r == false;
+        }
+
+        public override Square getHighlight()
+        {
+            return end_;
+        }
+
+        public override string ToString()
+        {
+            return end_.ToString() + piece_.t_.ToString();
+        }
+    }
+
     static List<Piece> pieces = new List<Piece>();
     static Stack<Command> notation = new Stack<Command>();
     public static Color turn = Color.WHITE;
@@ -429,9 +534,18 @@ public class ChessGame
                 // empty
                 if (temp == null)
                 {
-                    Move m = new Move(proposed, this);
-                    if (tbd || m.check())
-                        moves.Add(m);
+                    if (proposed.row_ == 8 || proposed.row_ == 1)
+                    {
+                        Promotion p = new Promotion(this, proposed);
+                        if (tbd || p.check())
+                            moves.Add(p);
+                    }
+                    else
+                    {
+                        Move m = new Move(proposed, this);
+                        if (tbd || m.check())
+                            moves.Add(m);
+                    }
 
                     proposed = proposed.add(step);
                     if (proposed.inBounds() && moved_ == false)
@@ -441,7 +555,7 @@ public class ChessGame
                         if (temp == null)
                         {
                             Move m2 = new Move(proposed, this, true);
-                            if (tbd || m.check())
+                            if (tbd || m2.check())
                                 moves.Add(m2);
                         }
                     }
@@ -460,9 +574,18 @@ public class ChessGame
                     // if there is an enemy piece
                     if (temp != null && temp.c_ != c_)
                     {
-                        Take t = new Take(proposed, this, temp);
-                        if (tbd || t.check())
-                            moves.Add(t);
+                        if (proposed.row_ == 8 || proposed.row_ == 1)
+                        {
+                            Promotion p = new Promotion(this, proposed, temp);
+                            if (tbd || p.check())
+                                moves.Add(p);
+                        }
+                        else
+                        {
+                            Take t = new Take(proposed, this, temp);
+                            if (tbd || t.check())
+                                moves.Add(t);
+                        }
                     }
                 }
 
@@ -760,14 +883,22 @@ public class ChessGame
                         // if enemy
                         else if (temp.c_ != c_)
                         {
+                            Debug.Log("HERE");
                             Take t = new Take(proposed, this, temp);
                             if (temp.t_ == Type.KING)
                             {
+                                Debug.Log("Over there");
                                 checking = true;
                                 moves.Add(t);
                             }
-                            else if (tbd || t.check())
-                                moves.Add(t);
+                            else if (tbd)
+                            {
+                                Debug.Log("INBETWEEN");
+                                if (t.check())
+                                    moves.Add(t);
+                                Debug.Log("Over here");
+                            }
+                            Debug.Log("THERE");
                         }
 
                         // if friendly do nothing
@@ -827,7 +958,8 @@ public class ChessGame
 
     static public bool inCheck(Color c)
     {
-        foreach (Piece piece in pieces)
+        var copy = new List<Piece>(pieces);
+        foreach (Piece piece in copy)
         {
             // if not on the same side
             if (piece.c_ != c)
@@ -846,8 +978,12 @@ public class ChessGame
     {
         bool attacked = inCheck(turn);
         bool hasMoves = false;
-        foreach (Piece piece in pieces)
+        var copy = new List<Piece>(pieces);
+        foreach (Piece piece in copy)
         {
+            Debug.Log("BEGIN CHECK");
+            Debug.Log(piece.ToString());
+            Debug.Log(pieces.Count);
             if (piece.c_ == turn)
             {
                 List<Command> moves = piece.getAvailableMoves(out bool temp);
@@ -857,6 +993,7 @@ public class ChessGame
                     break;
                 }
             }
+            Debug.Log("DONE : " + pieces.Count);
         }
 
         // if in checkmate
