@@ -409,7 +409,7 @@ public class BoardControl : MonoBehaviour
                         break;
                 }
                 // rotate the camera
-                // StartCoroutine(SmoothCameraMove());
+                StartCoroutine(SmoothCameraMove());
             }
 
             if (ChessGame.end() == 1)
@@ -418,13 +418,16 @@ public class BoardControl : MonoBehaviour
                 if (ChessGame.getTurn() == ChessGame.Color.BLACK)
                 {
                     Debug.Log("WHITE WON");
-                    canvas.GetComponent<WinTextManager>().DisplayWinText(true);
+                    canvas.GetComponent<WinTextManager>().DisplayWinText(true, false);
                 }
                 else
                 {
                     Debug.Log("BLACK WON");
-                    canvas.GetComponent<WinTextManager>().DisplayWinText(false);
+                    canvas.GetComponent<WinTextManager>().DisplayWinText(false, false);
                 }
+            } else if (ChessGame.end() == 2) {
+                Debug.Log("DRAW GAME");
+                canvas.GetComponent<WinTextManager>().DisplayWinText(true, true);
             }
         }
     }
