@@ -243,7 +243,6 @@ public class BoardControl : MonoBehaviour
             Debug.Log("Update Selected");
             selectedSquare = clicked;
 
-            // TODO check if the current active player has a piece at selectedSquare
             ChessGame.Square smth = new ChessGame.Square(clicked.file + 1, clicked.rank + 1);
             Debug.Log(smth.ToString());
             ChessGame.Piece current = ChessGame.getPiece(smth);
@@ -260,7 +259,6 @@ public class BoardControl : MonoBehaviour
 
             isSquareSelected = true;
             List<ChessGame.Command> validMoves = current.getAvailableMoves(out bool temp);
-            // Square[] validMoves = {clicked}; // TODO add valid moves here
 
             foreach (ChessGame.Command move in validMoves)
             {
@@ -428,45 +426,6 @@ public class BoardControl : MonoBehaviour
                     canvas.GetComponent<WinTextManager>().DisplayWinText(false);
                 }
             }
-
-            // TODO psuedocode for moving pieces
-            /* 
-            if (player has a piece at the selected square) {
-                EditedPiece[] editedPieces = gameManager.applyMove(selectedSquare, clicked);
-                foreach(EditedPiece editedPiece in editedPieces) {
-                    // Piece is neither created nor destroyed
-                    if (editedPiece.start.x >= 0 && editedPiece.end.x >= 0) {
-                        PieceContainer pieceAsset = editedPiece.getAsset();
-                        pieceAsset.UpdateLocation(editedPiece.end);
-
-                    // Piece was destroyed
-                    } else if (editedPiece.start.x > 0) {
-                        PieceContainer pieceAsset = editedPiece.getAsset();
-                        pieces.Remove(pieceAsset);
-                        pieceAsset.DoShrinkAnimation();
-                        Destroy(pieceAsset.model, 2f); // Wait two seconds for piece to be shrunk before destroying
-
-                    // Piece was created
-                    } else {
-                        GameObject prefabModel = editedPiece.getPrefab();
-                        pieces.Add(new PieceContainer(Instantiate(prefabModel), editedPiece.end));
-                        prefabModel.DoGrowAnimation();
-                    }
-                }
-                
-                // Move camera to other side
-                StartCoroutine(SmoothCameraMove());
-            }
-
-            if (game has been won) {
-                gameOver = true;
-
-                // Call this function with "TRUE" if white won, and with "FALSE" if black won
-                canvas.GetComponent<WinTextManager>().DisplayWinText(true);
-            }*/
-
-            // For demo purposes only, remove when done
-
         }
     }
 
