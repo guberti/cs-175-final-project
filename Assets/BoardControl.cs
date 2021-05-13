@@ -252,9 +252,9 @@ public class BoardControl : MonoBehaviour
                 Debug.Log("Not a piece");
                 return;
             }
-            if (current.c_ != ChessGame.turn)
+            if (current.c_ != ChessGame.getTurn())
             {
-                Debug.Log("Turn " + ChessGame.turn + " piece : " + current.ToString());
+                Debug.Log("Turn " + ChessGame.getTurn() + " piece : " + current.ToString());
                 return;
             }
 
@@ -395,7 +395,7 @@ public class BoardControl : MonoBehaviour
                         pawn.DoShrinkAnimation(this);
 
                         GameObject model;
-                        if (ChessGame.turn == ChessGame.Color.WHITE)
+                        if (ChessGame.getTurn() == ChessGame.Color.WHITE)
                             model = whiteQueen;
                         else
                             model = blackQueen;
@@ -417,7 +417,7 @@ public class BoardControl : MonoBehaviour
             if (ChessGame.end() == 1)
             {
                 Debug.Log("END OF GAME");
-                if (ChessGame.turn == ChessGame.Color.BLACK)
+                if (ChessGame.getTurn() == ChessGame.Color.BLACK)
                 {
                     Debug.Log("WHITE WON");
                     canvas.GetComponent<WinTextManager>().DisplayWinText(true);

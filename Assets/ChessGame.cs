@@ -116,7 +116,6 @@ public class ChessGame
         }
         public override void execute()
         {
-            Debug.Assert(ChessGame.turn == piece_.c_);
             Debug.Assert(piece_.s_.equals(start_));
 
             // clear inPassing
@@ -133,16 +132,10 @@ public class ChessGame
 
             if (passing_)
                 inPassing = (Pawn)piece_;
-
-            if (piece_.c_ == Color.WHITE)
-                turn = Color.BLACK;
-            else
-                turn = Color.WHITE;
         }
 
         public override void undo()
         {
-            Debug.Assert(ChessGame.turn != piece_.c_);
             Debug.Assert(piece_.s_.equals(end_));
 
             piece_.s_ = start_;
@@ -151,15 +144,11 @@ public class ChessGame
 
             if (firstMove)
                 piece_.moved_ = false;
-
-            if (piece_.c_ == Color.WHITE)
-                turn = Color.WHITE;
-            else
-                turn = Color.BLACK;
         }
 
         public override bool check()
         {
+            Debug.Log("CHECKING : " + ToString());
             execute();
             bool r = ChessGame.inCheck(piece_.c_);
             undo();
@@ -194,7 +183,6 @@ public class ChessGame
         public override void execute()
         {
             Debug.Log("EXECUTE");
-            Debug.Assert(ChessGame.turn == taker_.c_);
             Debug.Assert(taker_.s_.equals(start_));
             Debug.Assert(ChessGame.pieces.Contains(taken_));
 
@@ -209,16 +197,10 @@ public class ChessGame
                 taker_.moved_ = true;
                 firstMove = true; ;
             }
-
-            if (taker_.c_ == Color.WHITE)
-                turn = Color.BLACK;
-            else
-                turn = Color.WHITE;
         }
 
         public override void undo()
         {
-            Debug.Assert(ChessGame.turn != taker_.c_);
             Debug.Assert(taker_.s_.equals(end_));
             Debug.Assert(ChessGame.pieces.Contains(taken_) == false);
 
@@ -228,18 +210,12 @@ public class ChessGame
             inPassing = prevPassing_;
 
             if (firstMove)
-            {
                 taker_.moved_ = false;
-            }
-
-            if (taker_.c_ == Color.WHITE)
-                turn = Color.WHITE;
-            else
-                turn = Color.BLACK;
         }
 
         public override bool check()
         {
+            Debug.Log("CHECKING : " + ToString());
             execute();
             bool r = ChessGame.inCheck(taker_.c_);
             undo();
@@ -290,7 +266,6 @@ public class ChessGame
 
         public override void execute()
         {
-            Debug.Assert(ChessGame.turn == king_.c_);
             Debug.Assert(king_.s_.equals(start_king_));
             Debug.Assert(rook_.s_.equals(start_rook_));
             Debug.Assert(((King)king_).moved_ == false);
@@ -304,16 +279,10 @@ public class ChessGame
 
             ((King)king_).moved_ = true;
             ((Rook)rook_).moved_ = true;
-
-            if (king_.c_ == Color.WHITE)
-                turn = Color.BLACK;
-            else
-                turn = Color.WHITE;
         }
 
         public override void undo()
         {
-            Debug.Assert(ChessGame.turn != king_.c_);
             Debug.Assert(king_.s_.equals(end_king_));
             Debug.Assert(rook_.s_.equals(end_rook_));
             Debug.Assert(((King)king_).moved_ == true);
@@ -326,11 +295,6 @@ public class ChessGame
 
             ((King)king_).moved_ = false;
             ((Rook)rook_).moved_ = false;
-
-            if (king_.c_ == Color.WHITE)
-                turn = Color.WHITE;
-            else
-                turn = Color.BLACK;
         }
 
         // returns false if the movement is invalid
@@ -348,11 +312,9 @@ public class ChessGame
             if (getPiece(curr) != null)
                 return false;
             king_.s_ = curr;
-            turn = otherColor(king_.c_);
             if (ChessGame.inCheck(king_.c_))
             {
                 king_.s_ = start_king_;
-                turn = king_.c_;
                 return false;
             }
 
@@ -363,17 +325,14 @@ public class ChessGame
                 return false;
             }
             king_.s_ = curr;
-            turn = otherColor(king_.c_);
             if (ChessGame.inCheck(king_.c_))
             {
-                turn = king_.c_;
                 king_.s_ = start_king_;
                 return false;
             }
 
             // reset position
             king_.s_ = start_king_;
-            turn = king_.c_;
             return true;
         }
 
@@ -435,7 +394,6 @@ public class ChessGame
         public override void execute()
         {
             Debug.Assert(piece_ != null);
-            Debug.Assert(ChessGame.turn == pawn_.c_);
             Debug.Assert(pawn_.s_.equals(start_));
             Debug.Assert(ChessGame.pieces.Contains(piece_) == false);
 
@@ -457,7 +415,6 @@ public class ChessGame
         public override void undo()
         {
             Debug.Assert(piece_ != null);
-            Debug.Assert(ChessGame.turn != pawn_.c_);
             Debug.Assert(ChessGame.pieces.Contains(piece_) == true);
 
             inPassing = prevPassing_;
@@ -496,7 +453,8 @@ public class ChessGame
 
     static List<Piece> pieces = new List<Piece>();
     static Stack<Command> notation = new Stack<Command>();
-    public static Color turn = Color.WHITE;
+    private static Color turn = Color.WHITE;
+    public static Color getTurn() { return ChessGame.turn; }
     public static Pawn inPassing = null;
 
     public static Piece getPiece(Square s)
@@ -882,19 +840,22 @@ public class ChessGame
 
                     if (proposed.inBounds())
                     {
+                        Debug.Log("CHECKING PROPOSED: " + proposed.ToString());
                         Piece temp = getPiece(proposed);
 
                         // if empty
                         if (temp == null)
                         {
+                            Debug.Log("EMPTY SQUARE");
                             Move m = new Move(proposed, this);
                             if (tbd || m.check())
                                 moves.Add(m);
                         }
+
                         // if enemy
                         else if (temp.c_ != c_)
                         {
-                            Debug.Log("HERE");
+                            Debug.Log("ENEMY PIECE");
                             Take t = new Take(proposed, this, temp);
                             if (temp.t_ == Type.KING)
                             {
@@ -902,7 +863,7 @@ public class ChessGame
                                 checking = true;
                                 moves.Add(t);
                             }
-                            else if (tbd)
+                            else if (tbd || t.check())
                             {
                                 Debug.Log("INBETWEEN");
                                 if (t.check())
@@ -1026,11 +987,13 @@ public class ChessGame
     {
         c.execute();
         notation.Push(c);
+        turn = otherColor(turn);
     }
 
     public void undo()
     {
         notation.Pop().undo();
+        turn = otherColor(turn);
     }
 
     public void buildBoard()
